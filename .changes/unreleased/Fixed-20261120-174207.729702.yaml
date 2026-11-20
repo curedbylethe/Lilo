@@ -1,0 +1,3 @@
+kind: Fixed
+body: 'If the chrome UI is ever reloaded, spaces and tabs now come back with it and the sidebar always stays reachable: the reload resets the chrome''s bootstrap handshake and releases the sidebar collapse lock, so View > Hide/Show Sidebar keeps working instead of needing an app restart'
+time: 2026-11-20T17:42:07.729702+03:30
