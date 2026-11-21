@@ -67,3 +67,42 @@ test("the library menu lists running downloads above the archived tabs, with the
 	await expect(menu).toHaveCount(0);
 	await expect(page.getByRole("region", { name: "Downloads" })).toBeVisible();
 });
+
+test("a right-click in the portalled downloads popover is consumed by the chrome UI", async ({ page }) => {
+	await bootChrome(page, initialWorld());
+	await page.evaluate(() => {
+		window.__lilo!.receive({
+			event: "downloadUpdated", id: 1, url: "https://example.com/a.zip", filename: "a.zip", state: "inProgress",
+			bytesReceived: 40, totalBytes: 100, startedAt: 1, fileMissing: false, source: "wk",
+		});
+	});
+
+	await page.getByRole("button", { name: "Downloads, 1 active" }).click();
+	const menu = page.getByRole("menu", { name: "Downloads and archived tabs", exact: true });
+	await expect(menu).toBeVisible();
+	const row = menu.getByRole("menuitem", { name: /a\.zip\s*40%/ });
+	await expect(row).toBeVisible();
+	// A row under #chrome-root would already be covered by the old element-level handler.
+	expect(await row.evaluate((el) => el.closest("#chrome-root"))).toBeNull();
+
+	// Registered after the app's own document listener, so it sees the final defaultPrevented.
+	const capture = await page.evaluateHandle(() => {
+		const state = { prevented: null as boolean | null };
+		document.addEventListener("contextmenu", (event) => {
+			state.prevented = event.defaultPrevented;
+		}, { once: true });
+		return state;
+	});
+	// Zone reports are batched per frame while the popover's intro animation moves it.
+	await menu.evaluate(async (el) => {
+		await Promise.all(el.getAnimations().map((animation) => animation.finished));
+		await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+	});
+	const commandsBefore = await sentCommands(page);
+
+	const box = (await row.boundingBox())!;
+	await page.mouse.click(box.x + 40, box.y + box.height / 2, { button: "right" });
+
+	expect(await capture.evaluate((state) => state.prevented)).toBe(true);
+	expect(await sentCommands(page)).toEqual(commandsBefore);
+});

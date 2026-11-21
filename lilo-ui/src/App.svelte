@@ -400,12 +400,13 @@
   });
 </script>
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- Portalled popovers live under document.body, outside #chrome-root. -->
+<svelte:document oncontextmenu={(e) => e.preventDefault()} />
+
 <div
   id="chrome-root"
   class:sidebar-resizing={isSidebarResizing}
   class:fullscreen={isFullscreen()}
-  oncontextmenu={(e) => e.preventDefault()}
 >
   <!-- The frame around the content area (sidebar band, inset ring, rounded corners)
        is painted natively by WindowFrameView, so nothing full-viewport here. -->

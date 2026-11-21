@@ -292,6 +292,9 @@ extension MainWindowController {
         #if DEBUG
         unsafe chromeInput.setDebugOverlayShown(UserDefaults.lilo.bool(forKey: Self.hitboxDebugDefaultsKey))
         #endif
+        // Swift state outlives a chrome load: a reloaded document needs the state again and an unlocked sidebar.
+        hasDispatchedChromeInitialState = false
+        setSidebarCollapseLocked(false)
         dispatchChromeInitialStateIfPossible()
     }
 
